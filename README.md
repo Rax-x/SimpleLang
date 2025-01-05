@@ -25,7 +25,7 @@ and the symbol table is implemented with a linked list.
   if-statement: 'if' expression 'then' statement ('else' statement)? 
   expression-statement: expression ';'
 
-  expression: assignmentn
+  expression: assignment
   assignment: unary '=' assignment | comparison
   comparison: term (('>' | '<' | '>=' | '<=') term)*
   term: factor (('+' | '-') factor)*

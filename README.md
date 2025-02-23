@@ -45,19 +45,19 @@ and the symbol table is implemented with a linked list.
 let PI = 3.14; # type inference
 var myBooleanValue bool = true;
 
-var matrix integer[3][3];
+var matrix integer[3][3] = {
+    {1, 2, 3},
+    {4, 5, 6},
+    {7, 8, 9}
+};
 
-matrix[0][0] = 1;
-matrix[0][1] = 2;
-matrix[0][2] = 3;
+matrix[0][0] = 0;
+matrix[0][2] = 0;
 
-matrix[1][0] = 4;
-matrix[1][1] = 5;
-matrix[1][2] = 6;
+matrix[1][1] = 0;
 
-matrix[2][0] = 7;
-matrix[2][1] = 8;
-matrix[2][2] = 9;
+matrix[2][0] = 0;
+matrix[2][2] = 0;
 
 if matrix[2][2] <= 9.1 then
    matrix[2][2] = 9.2; # Assign error

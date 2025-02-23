@@ -1,33 +1,27 @@
 #include "../include/types.h"
 #include "../include/memory.h"
 
-type_t* float_type = &(type_t) {.kind = TYPE_FLOAT, .bytes = sizeof(float) };
-type_t* int_type = &(type_t) {.kind = TYPE_INT, .bytes = sizeof(int) };
-type_t* bool_type = &(type_t) {.kind = TYPE_BOOL, .bytes = sizeof(bool) };
+type_t* float_type = &(type_t) {.kind = TYPE_FLOAT, .length=0, .underlying=NULL};
+type_t* int_type = &(type_t) {.kind = TYPE_INT, .length=0, .underlying=NULL};
+type_t* bool_type = &(type_t) {.kind = TYPE_BOOL, .length=0, .underlying=NULL};
 
 type_t* create_array_type(const type_t* underlying, int length) {
-    array_type_t* t = MALLOC(array_type_t*, sizeof(array_type_t));
+    type_t* t = MALLOC(type_t*, sizeof(type_t));
 
-    t->base.kind = TYPE_ARRAY;
-    t->base.bytes = underlying->bytes * length;
+    t->kind = TYPE_ARRAY;
     t->underlying = underlying;
     t->length = length;
 
-    return (type_t*)t;
+    return t;
 }
 
 bool are_types_equal(const type_t* t1, const type_t* t2) {
 
     if(t1->kind != t2->kind) return false;
-    if(t2->bytes != t1->bytes) return false;
     
     if(t1->kind == TYPE_ARRAY) {
-        const array_type_t* atype1 = (array_type_t*)t1;
-        const array_type_t* atype2 = (array_type_t*)t1;
-
-        if(atype1->length != atype2->length) return false;
-
-        return are_types_equal(atype1->underlying, atype2->underlying);
+        if(t1->length != t2->length) return false;
+        return are_types_equal(t1->underlying, t2->underlying);
     }
 
     return true;

@@ -131,7 +131,7 @@ static const type_t* typecheck_node(const ast_node_t* node, typechecker_t* tchec
                 TYPECHECK_ERROR(tcheck, "Subscript expression expect integer as index.\n");
             }
 
-            return ((array_type_t*)type)->underlying;
+            return type->underlying;
         }
         case VARIABLE_EXPR_NODE: {
 

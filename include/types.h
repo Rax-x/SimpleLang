@@ -12,15 +12,11 @@ typedef enum _type_kind {
 
 typedef struct _type {
     type_kind_t kind;
-    int bytes;
-} type_t;
 
-typedef struct _array_type {
-    type_t base;
-    
+    // For array data type
     int length;
-    const type_t* underlying;
-} array_type_t;
+    const struct _type* underlying;
+} type_t;
 
 #define IS_NUMERIC_TYPE(t) ((t)->kind == TYPE_INT || (t)->kind == TYPE_FLOAT)
 

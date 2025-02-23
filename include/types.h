@@ -32,4 +32,6 @@ bool can_cast_to(const type_t* from, const type_t* to);
 
 const type_t* cast_to_bigger(const type_t* t1, const type_t* t2);
 
+void print_type(const type_t* restrict t);
+
 #endif

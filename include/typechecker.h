@@ -18,6 +18,6 @@ typedef struct _typechecker {
 } typechecker_t;
 
 typechecker_t create_typechecker();
-bool typecheck_ast(ast_node_t* ast, typechecker_t* tcheck);
+bool typecheck_ast(const ast_node_t* ast, typechecker_t* tcheck);
 
 #endif

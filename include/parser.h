@@ -11,6 +11,6 @@ typedef struct _parser {
 } parser_t;
 
 parser_t init_parser(string_view_t source);
-ast_node_t* parse_program(parser_t* p);
+const ast_node_t* parse_program(parser_t* p);
 
 #endif

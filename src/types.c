@@ -1,6 +1,8 @@
 #include "../include/types.h"
 #include "../include/memory.h"
 
+#include <stdio.h>
+
 type_t* float_type = &(type_t) {.kind = TYPE_FLOAT, .length=0, .underlying=NULL};
 type_t* int_type = &(type_t) {.kind = TYPE_INT, .length=0, .underlying=NULL};
 type_t* bool_type = &(type_t) {.kind = TYPE_BOOL, .length=0, .underlying=NULL};
@@ -52,4 +54,22 @@ bool can_cast_to(const type_t* from, const type_t* to) {
 inline const type_t* cast_to_bigger(const type_t* t1, const type_t* t2) {
     if(are_types_equal(t1, t2)) return t1;
     return can_cast_to(t1, t2) ? t2 : t1;
+}
+
+inline void print_type(const type_t* restrict t) {
+    switch(t->kind) {
+        case TYPE_INT:
+            printf("integer");
+            break;
+        case TYPE_FLOAT:
+            printf("float");
+            break;
+        case TYPE_BOOL:
+            printf("bool");
+            break;
+        case TYPE_ARRAY:
+            print_type(t->underlying);
+            printf("[%d]", t->length);
+            break;
+    }
 }

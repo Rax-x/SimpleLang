@@ -58,9 +58,9 @@ int main(int argc, char** argv) {
     const char* const buffer = read_from_file(argv[1]);
 
     parser_t p = init_parser(new_string_view_from_cstr(buffer));
-    ast_node_t* program = parse_program(&p);
+    const ast_node_t* program = parse_program(&p);
 
-    print_ast(program, 0);
+    print_ast(program);
     puts("\n");
 
     typechecker_t tcheck = create_typechecker();

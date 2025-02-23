@@ -28,16 +28,14 @@ static const type_t* typecheck_node(const ast_node_t* node, typechecker_t* tchec
     switch(node->kind) {
         case VARIABLE_DECL_NODE: {
             const variable_decl_t* const decl = (variable_decl_t*)node;
-
-            const bool is_type_inferred = (decl->type == NULL);
             
-            const type_t* t = !is_type_inferred
-                ? typecheck_node(decl->type, tcheck)
-                : typecheck_node(decl->rvalue, tcheck);
+            const type_t* t = decl->is_type_inferred
+                ? typecheck_node(decl->rvalue, tcheck)
+                : decl->type;
                 
             symbol_table_put(tcheck->symtbl, decl->name.lexeme, t);
 
-            if(decl->rvalue != NULL && !is_type_inferred) {
+            if(decl->rvalue != NULL && !decl->is_type_inferred) {
                 if(!can_assign_to(typecheck_node(decl->rvalue, tcheck), t)) {
                     TYPECHECK_ERROR(tcheck, "Variable decl type mismatch!.\n");
                 }
@@ -141,34 +139,14 @@ static const type_t* typecheck_node(const ast_node_t* node, typechecker_t* tchec
         case LITERAL_NODE: {
 
             const literal_expr_t* const lit = (literal_expr_t*)node;
-
-            if(lit->is_boolean) return bool_type;
-            if(lit->is_integer) return int_type;
-
-            return float_type;
+            return lit->type;
         }
-        case TYPE_EXPR_NODE: {
-            const type_expr_t* const texpr = (type_expr_t*)node;
-
-
-            if(texpr->kind == TYPE_EXPR_SIMPLE) {
-                const simple_type_expr_t* const simple = (simple_type_expr_t*) texpr;
-                return symbol_table_search(tcheck->symtbl, simple->name.lexeme);
-            } 
-
-            const array_type_expr_t* const array = (array_type_expr_t*) texpr;
-
-            return create_array_type(typecheck_node(array->underlying, tcheck), 
-                                     array->length);
-        }
-        default:
-            break;
     }
 
     return NULL;
 }
 
-bool typecheck_ast(ast_node_t* ast, typechecker_t* tcheck) {
+bool typecheck_ast(const ast_node_t* ast, typechecker_t* tcheck) {
 
     if(setjmp(tcheck->error) == 0) {
         for(const ast_node_t* it = ast; it != NULL; it = it->next){

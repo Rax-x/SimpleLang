@@ -136,6 +136,10 @@ static const type_t* typecheck_node(const ast_node_t* node, typechecker_t* tchec
             const variable_expr_t* const var = (variable_expr_t*)node;
             return symbol_table_search(tcheck->symtbl, var->name.lexeme);
         }
+        case INITIALIZER_NODE: {
+            // TODO(Rax): typecheck initializers
+            break;
+        }
         case LITERAL_NODE: {
 
             const literal_expr_t* const lit = (literal_expr_t*)node;

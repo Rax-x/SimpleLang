@@ -93,6 +93,14 @@ inline const ast_node_t* make_variable_expr(token_t name) {
     return (ast_node_t*) node;
 }
 
+inline const ast_node_t* make_initializer(const ast_node_t* init) {
+    initializer_t* const node = MALLOC(initializer_t*, sizeof(initializer_t));
+
+    node->base.kind = INITIALIZER_NODE;
+    node->init = init;
+
+    return (ast_node_t*) node;
+}
 
 inline const ast_node_t* make_literal_expr(float value, const type_t* type) {
     literal_expr_t* const node = MALLOC(literal_expr_t*, sizeof(literal_expr_t));
@@ -196,6 +204,17 @@ static void print_ast_node(const ast_node_t* node, int level) {
 
              printf("variable_expr: "STRING_VIEW_FORMAT, 
                     STRING_VIEW_ARG(var->name.lexeme));
+
+             break;
+         }
+         case INITIALIZER_NODE: {
+
+             const initializer_t* const list = (initializer_t*)node;
+
+             printf("initializer: ");
+             for(const ast_node_t* it = list->init; it != NULL; it = it->next) {
+                 print_ast_node(it, level+1);
+             }
 
              break;
          }

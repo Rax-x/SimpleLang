@@ -19,7 +19,9 @@ and the symbol table is implemented with a linked list.
   declaration: variable-decl | statement
 
   type-expr: ('float' | 'integer' | 'bool') ('[' INTEGER ']')*
-  variable-decl: ('let' | 'var') IDENTIFIER type-expr? ('=' expression)? ';'
+             
+  initializer: expression | '{' initializer (',' initializer)* '}'
+  variable-decl: ('let' | 'var') IDENTIFIER type-expr? ('=' initializer)? ';'
 
   statement: if-statement | expression-statement
   if-statement: 'if' expression 'then' statement ('else' statement)? 

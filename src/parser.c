@@ -156,6 +156,19 @@ static inline const ast_node_t* parse_expression(parser_t* p){
     return parse_assignment(p);
 }
 
+static const type_t* parse_type_suffix(parser_t* p, const type_t* type) {
+
+    if(!parser_match(p, LEFT_BRACKET))  {
+        return type;
+    }
+
+    token_t literal = parser_consume(p, INTEGER_LITERAL);
+    unsigned int length = strtol(string_view_data(literal.lexeme), NULL, 10);
+    parser_consume(p, RIGHT_BRACKET);
+
+    return create_array_type(parse_type_suffix(p, type), length);
+}
+
 static const type_t* parse_type(parser_t* p) {
     
     const type_t* type = NULL;
@@ -171,17 +184,7 @@ static const type_t* parse_type(parser_t* p) {
         exit(EXIT_FAILURE);
     }
 
-    while(parser_match(p, LEFT_BRACKET)) {
-
-        token_t literal = parser_consume(p, INTEGER_LITERAL);
-        unsigned int length = strtol(string_view_data(literal.lexeme), NULL, 10);
-        
-        type = create_array_type(type, length);
-
-        parser_consume(p, RIGHT_BRACKET);
-    }
-
-    return type;
+    return parse_type_suffix(p, type);
 }
 
 static const ast_node_t* parse_initializer(parser_t* p) {

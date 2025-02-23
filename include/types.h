@@ -18,6 +18,7 @@ typedef struct _type {
     const struct _type* underlying;
 } type_t;
 
+#define IS_ARRAY(t) ((t)->kind == TYPE_ARRAY)
 #define IS_NUMERIC_TYPE(t) ((t)->kind == TYPE_INT || (t)->kind == TYPE_FLOAT)
 
 extern type_t* float_type;

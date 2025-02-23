@@ -21,7 +21,7 @@ bool are_types_equal(const type_t* t1, const type_t* t2) {
 
     if(t1->kind != t2->kind) return false;
     
-    if(t1->kind == TYPE_ARRAY) {
+    if(IS_ARRAY(t1)) {
         if(t1->length != t2->length) return false;
         return are_types_equal(t1->underlying, t2->underlying);
     }
@@ -67,9 +67,23 @@ inline void print_type(const type_t* restrict t) {
         case TYPE_BOOL:
             printf("bool");
             break;
-        case TYPE_ARRAY:
-            print_type(t->underlying);
-            printf("[%d]", t->length);
+        case TYPE_ARRAY: {
+
+            const type_t* current = t;
+            const type_t* base_type = current->underlying;
+
+            while(IS_ARRAY(base_type)) {
+                base_type = base_type->underlying;
+            }
+
+            print_type(base_type);
+
+            do {
+                printf("[%d]", current->length);
+                current = current->underlying;
+            } while(IS_ARRAY(current));
+
             break;
+        }
     }
 }

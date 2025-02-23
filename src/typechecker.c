@@ -137,8 +137,23 @@ static const type_t* typecheck_node(const ast_node_t* node, typechecker_t* tchec
             return symbol_table_search(tcheck->symtbl, var->name.lexeme);
         }
         case INITIALIZER_NODE: {
-            // TODO(Rax): typecheck initializers
-            break;
+            // TODO(Rax): Fix array type instantiation
+
+            const initializer_t* const initializer = (initializer_t*)node;
+
+            const type_t* prev = NULL;
+            int count = 0;
+            for(const ast_node_t* it = initializer->init; it != NULL; it = it->next, count++) {
+                const type_t* type = typecheck_node(it, tcheck);
+
+                if(prev != NULL && !are_types_equal(prev, type)) {
+                    TYPECHECK_ERROR(tcheck, "Initializer type is not uniform.\n");
+                }
+
+                prev = type;
+            }
+
+            return create_array_type(prev, count);
         }
         case LITERAL_NODE: {
 

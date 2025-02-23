@@ -184,6 +184,22 @@ static const type_t* parse_type(parser_t* p) {
     return type;
 }
 
+static const ast_node_t* parse_initializer(parser_t* p) {
+
+    if(!parser_match(p, LEFT_BRACE)) {
+        return parse_expression(p);
+    }
+
+    ast_node_t* const initializer = (ast_node_t*) parse_initializer(p);
+    for(ast_node_t* curr = initializer; parser_match(p, COMMA); curr = (ast_node_t*) curr->next) {
+        curr->next = parse_initializer(p);
+    }
+    
+    parser_consume(p, RIGHT_BRACE);
+
+    return make_initializer(initializer);
+}
+
 static const ast_node_t* parse_var_declaration(parser_t* p) {
 
     const bool is_type_inferred = PARSER_PREV(p).type == LET_KEYWORD;
@@ -196,7 +212,7 @@ static const ast_node_t* parse_var_declaration(parser_t* p) {
 
     const ast_node_t* initializer = NULL;
     if(parser_match(p, ASSIGN)) {
-        initializer = parse_expression(p);
+        initializer = parse_initializer(p);
     }
 
     if(initializer == NULL && is_type_inferred) {

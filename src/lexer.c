@@ -75,6 +75,8 @@ token_t next_token(lexer_t* restrict lex) {
             return make_token(lex, STAR);
         case '=':
             return make_token(lex, ASSIGN);
+        case ',':
+            return make_token(lex, COMMA);
         case ';':
             return make_token(lex, SEMICOLON);
         case '(':
@@ -85,6 +87,10 @@ token_t next_token(lexer_t* restrict lex) {
             return make_token(lex, LEFT_BRACKET);
         case ']':
             return make_token(lex, RIGHT_BRACKET);
+        case '{':
+            return make_token(lex, LEFT_BRACE);
+        case '}':
+            return make_token(lex, RIGHT_BRACE);
         case '>':
             return make_token(lex, match(lex, '=') ? GREATER_EQ : GREATER);
         case '<':

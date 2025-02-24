@@ -122,10 +122,11 @@ token_t next_token(lexer_t* restrict lex) {
                 const string_view_t lexeme = string_view_substr(lex->source,
                                                                 lex->start,
                                                                 lex->current - lex->start);
-
                 token_type_t type = IDENTIFIER;
                 if(string_view_equal(lexeme, new_string_view_from_cstr("var"))) {
                     type = VAR_KEYWORD;
+                } else if(string_view_equal(lexeme, new_string_view_from_cstr("as"))) {
+                    type = AS_KEYWORD;
                 } else if(string_view_equal(lexeme, new_string_view_from_cstr("let"))) {
                     type = LET_KEYWORD;
                 } else if(string_view_equal(lexeme, new_string_view_from_cstr("true"))) {

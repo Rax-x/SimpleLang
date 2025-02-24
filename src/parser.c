@@ -97,12 +97,55 @@ static const ast_node_t* parse_unary(parser_t* p) {
     return parse_subscript(p);
 }
 
-static const ast_node_t* parse_factor(parser_t* p) {
+static const type_t* parse_type_suffix(parser_t* p, const type_t* type) {
+
+    if(!parser_match(p, LEFT_BRACKET))  {
+        return type;
+    }
+
+    token_t literal = parser_consume(p, INTEGER_LITERAL);
+    unsigned int length = strtol(string_view_data(literal.lexeme), NULL, 10);
+    parser_consume(p, RIGHT_BRACKET);
+
+    return create_array_type(parse_type_suffix(p, type), length);
+}
+
+static const type_t* parse_type(parser_t* p) {
+
+    const type_t* type = NULL;
+
+    if(parser_match(p, FLOAT_KEYWORD)) {
+        type = float_type;
+    } else if(parser_match(p, INTEGER_KEYWORD)) {
+        type = int_type;
+    } else if(parser_match(p, BOOL_KEYWORD)) {
+        type = bool_type;
+    } else {
+        fprintf(stderr, "[Ln: %d] Unknown data type.\n", PARSER_CURR(p).line);
+        exit(EXIT_FAILURE);
+    }
+
+    return parse_type_suffix(p, type);
+}
+
+static const ast_node_t* parse_casting(parser_t* p) {
+
     const ast_node_t* left = parse_unary(p);
+
+    while(parser_match(p, AS_KEYWORD)) {
+        const type_t* const type = parse_type(p);
+        left = make_casting_expr(left, type);
+    }
+
+    return left;
+}
+
+static const ast_node_t* parse_factor(parser_t* p) {
+    const ast_node_t* left = parse_casting(p);
 
     while(parser_match(p, STAR) || parser_match(p, SLASH)) {
         token_t op = PARSER_PREV(p);
-        left = make_binary_expr(op, left, parse_unary(p));
+        left = make_binary_expr(op, left, parse_casting(p));
     }
 
     return left;
@@ -154,37 +197,6 @@ static const ast_node_t* parse_assignment(parser_t* p) {
 
 static inline const ast_node_t* parse_expression(parser_t* p){
     return parse_assignment(p);
-}
-
-static const type_t* parse_type_suffix(parser_t* p, const type_t* type) {
-
-    if(!parser_match(p, LEFT_BRACKET))  {
-        return type;
-    }
-
-    token_t literal = parser_consume(p, INTEGER_LITERAL);
-    unsigned int length = strtol(string_view_data(literal.lexeme), NULL, 10);
-    parser_consume(p, RIGHT_BRACKET);
-
-    return create_array_type(parse_type_suffix(p, type), length);
-}
-
-static const type_t* parse_type(parser_t* p) {
-    
-    const type_t* type = NULL;
-
-    if(parser_match(p, FLOAT_KEYWORD)) {
-        type = float_type;
-    } else if(parser_match(p, INTEGER_KEYWORD)) {
-        type = int_type;
-    } else if(parser_match(p, BOOL_KEYWORD)) {
-        type = bool_type;
-    } else {
-        fprintf(stderr, "[Ln: %d] Unknown data type.\n", PARSER_CURR(p).line);
-        exit(EXIT_FAILURE);
-    }
-
-    return parse_type_suffix(p, type);
 }
 
 static const ast_node_t* parse_initializer(parser_t* p) {

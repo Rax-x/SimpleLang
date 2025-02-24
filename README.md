@@ -31,7 +31,8 @@ and the symbol table is implemented with a linked list.
   assignment: unary '=' assignment | comparison
   comparison: term (('>' | '<' | '>=' | '<=') term)*
   term: factor (('+' | '-') factor)*
-  factor: unary (('*' | '/') unary)*
+  factor: casting (('*' | '/') casting)*
+  casting: unary ('as' type-expr)*
   unary: ('-' | '+') unary | subscipt
   subscript: primary('[' expression ']')*
   primary: INTEGER | FLOATING_POINT | 'false' | 'true' | '(' expression ')'

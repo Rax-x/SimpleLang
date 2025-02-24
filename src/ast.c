@@ -74,6 +74,16 @@ inline const ast_node_t* make_unary_expr(token_t op, const ast_node_t* right) {
     return (ast_node_t*)node;
 }
 
+const ast_node_t* make_casting_expr(const ast_node_t* expr, const type_t* target_type) {
+    casting_expr_t* const node = MALLOC(casting_expr_t*, sizeof(casting_expr_t));
+    
+    node->base.kind = CASTING_EXPR_NODE;
+    node->expr = expr;
+    node->target_type = target_type;
+
+    return (ast_node_t*) node;
+}
+
 inline const ast_node_t* make_subscript_expr(const ast_node_t* lvalue, const ast_node_t* index) {
     subscript_expr_t* const node = MALLOC(subscript_expr_t*, sizeof(subscript_expr_t));
 
@@ -185,6 +195,16 @@ static void print_ast_node(const ast_node_t* node, int level) {
 
              printf("unary_expr: "STRING_VIEW_FORMAT, STRING_VIEW_ARG(expr->op.lexeme));
              print_ast_node(expr->right, level+1);
+
+             break;
+         }
+         case CASTING_EXPR_NODE: {
+             
+             const casting_expr_t* const expr = (casting_expr_t*)node;
+
+             printf("casting_expr: ");
+             print_type(expr->target_type);
+             print_ast_node(expr->expr, level + 1);
 
              break;
          }

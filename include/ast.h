@@ -14,7 +14,8 @@ typedef enum {
     ASSIGN_EXPR_NODE,
     BINARY_EXPR_NODE,
     UNARY_EXPR_NODE,
-    SUBSCRIPT_EXPR_NODE,
+    CASTING_EXPR_NODE,
+    SUBSCRIPT_EXPR_NODE,    
     VARIABLE_EXPR_NODE,
     INITIALIZER_NODE,
     LITERAL_NODE
@@ -74,6 +75,13 @@ typedef struct {
 typedef struct {
     ast_node_t base;
 
+    const ast_node_t* expr;
+    const type_t* target_type;
+} casting_expr_t;
+
+typedef struct {
+    ast_node_t base;
+
     const ast_node_t* lvalue;
     const ast_node_t* index;
 } subscript_expr_t;
@@ -106,6 +114,7 @@ const ast_node_t* make_expr_stmt(const ast_node_t* expr);
 const ast_node_t* make_assign_expr(const ast_node_t* lvalue, const ast_node_t* rvalue);
 const ast_node_t* make_binary_expr(token_t op, const ast_node_t* left, const ast_node_t* right);
 const ast_node_t* make_unary_expr(token_t op, const ast_node_t* right);
+const ast_node_t* make_casting_expr(const ast_node_t* expr, const type_t* target_type);
 const ast_node_t* make_subscript_expr(const ast_node_t* lvalue, const ast_node_t* index);
 const ast_node_t* make_variable_expr(token_t name);
 const ast_node_t* make_initializer(const ast_node_t* init);

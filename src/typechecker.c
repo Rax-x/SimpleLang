@@ -115,6 +115,13 @@ static const type_t* typecheck_node(const ast_node_t* node, typechecker_t* tchec
 
             return right;
         }
+        case CASTING_EXPR_NODE: {
+
+            const casting_expr_t* const expr = (casting_expr_t*)node;
+            // TODO(Rax): typecheck casting expression
+
+            break;
+        }
         case SUBSCRIPT_EXPR_NODE: {
 
             const subscript_expr_t* const expr = (subscript_expr_t*)node;

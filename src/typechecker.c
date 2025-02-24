@@ -36,7 +36,7 @@ static const type_t* typecheck_node(const ast_node_t* node, typechecker_t* tchec
             symbol_table_put(tcheck->symtbl, decl->name.lexeme, t);
 
             if(decl->rvalue != NULL && !decl->is_type_inferred) {
-                if(!can_assign_to(typecheck_node(decl->rvalue, tcheck), t)) {
+                if(!are_types_equal(typecheck_node(decl->rvalue, tcheck), t)) {
                     TYPECHECK_ERROR(tcheck, "Variable decl type mismatch!.\n");
                 }
             }
@@ -69,7 +69,7 @@ static const type_t* typecheck_node(const ast_node_t* node, typechecker_t* tchec
             const type_t* left = typecheck_node(expr->lvalue, tcheck);
             const type_t* right = typecheck_node(expr->rvalue, tcheck);
 
-            if(!can_assign_to(right, left)) {
+            if(!are_types_equal(right, left)) {
                 TYPECHECK_ERROR(tcheck, "Assign type mismatch!\n");
             }
 
@@ -90,8 +90,14 @@ static const type_t* typecheck_node(const ast_node_t* node, typechecker_t* tchec
                 case PLUS:
                 case MINUS:
                 case STAR:
-                case SLASH:
-                    return cast_to_bigger(left, right);
+                case SLASH: {
+                    const type_t* result = cast_to_bigger(left, right);
+                    if(result == NULL) {
+                        TYPECHECK_ERROR(tcheck, "Can't cast form/to arrays.\n");
+                    }
+
+                    return result;
+                }
                 case LESS:
                 case GREATER:
                 case GREATER_EQ:
@@ -118,9 +124,13 @@ static const type_t* typecheck_node(const ast_node_t* node, typechecker_t* tchec
         case CASTING_EXPR_NODE: {
 
             const casting_expr_t* const expr = (casting_expr_t*)node;
-            // TODO(Rax): typecheck casting expression
 
-            break;
+            const type_t* const expr_type = typecheck_node(expr->expr, tcheck);
+            if (!can_cast_to(expr_type, expr->target_type)) {
+                TYPECHECK_ERROR(tcheck, "Cast error.\n");
+            }
+
+            return expr->target_type;
         }
         case SUBSCRIPT_EXPR_NODE: {
 
@@ -144,7 +154,6 @@ static const type_t* typecheck_node(const ast_node_t* node, typechecker_t* tchec
             return symbol_table_search(tcheck->symtbl, var->name.lexeme);
         }
         case INITIALIZER_NODE: {
-            // TODO(Rax): Fix array type instantiation
 
             const initializer_t* const initializer = (initializer_t*)node;
 

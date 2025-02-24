@@ -29,31 +29,35 @@ bool are_types_equal(const type_t* t1, const type_t* t2) {
     return true;
 }
 
-inline bool can_assign_to(const type_t* from, const type_t* to) {
-    return !are_types_equal(from, to) 
-        ? can_cast_to(from, to)
-        : true;
-}
-
 bool can_cast_to(const type_t* from, const type_t* to) {
 
     switch(from->kind) {
         case TYPE_INT:
-            return to->kind == TYPE_FLOAT;
         case TYPE_FLOAT:
-            return false;
+            return IS_NUMERIC_TYPE(to);
         case TYPE_BOOL:
             return IS_NUMERIC_TYPE(to);
         case TYPE_ARRAY:
             return false;
     }
 
-    return true; // unrechable
+    return true;
 }
 
 inline const type_t* cast_to_bigger(const type_t* t1, const type_t* t2) {
     if(are_types_equal(t1, t2)) return t1;
-    return can_cast_to(t1, t2) ? t2 : t1;
+
+    switch(t1->kind) {
+        case TYPE_INT:
+        case TYPE_FLOAT:
+            return t2->kind == TYPE_FLOAT ? t2 : t1;
+        case TYPE_BOOL:
+            return IS_NUMERIC_TYPE(t2) ? t2 : t1;
+        case TYPE_ARRAY:
+            return NULL;
+    }
+
+    return NULL;
 }
 
 inline void print_type(const type_t* restrict t) {

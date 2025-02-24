@@ -28,7 +28,6 @@ extern type_t* bool_type;
 type_t* create_array_type(const type_t* underlying, int length);
 
 bool are_types_equal(const type_t* t1, const type_t* t2);
-bool can_assign_to(const type_t* from, const type_t* to);
 bool can_cast_to(const type_t* from, const type_t* to);
 
 const type_t* cast_to_bigger(const type_t* t1, const type_t* t2);

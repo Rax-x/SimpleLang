@@ -7,14 +7,11 @@
 #include <setjmp.h>
 #include <stdbool.h>
 
-#define TYPECHECKER_OK 0
-#define TYPECHECKER_ERROR 1
-
 typedef struct _typechecker {
-    symbol_table_t* symtbl;
+    symbol_table_t* const symtbl;
     
-    jmp_buf error;
-    int status;
+    const type_t* current;
+    bool had_error;
 } typechecker_t;
 
 typechecker_t create_typechecker();

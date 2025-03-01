@@ -1,13 +1,31 @@
 #include "../include/typechecker.h"
 
-#include <setjmp.h>
 #include <stdio.h>
+#include <stdarg.h>
 
-#define TYPECHECK_ERROR(tcheck, msg) do {               \
-        fprintf(stderr, msg);                           \
-        longjmp((tcheck)->error, TYPECHECKER_ERROR);    \
-    } while(0)
+typedef enum {
+    TCHECK_INVALID_ASSIGNMENT,
+    TCHECK_VARIABLE_INIT_ERROR,
+    TCHECK_INCOMPATIBLE_TYPES,
+    TCHECK_EXPECT_BOOLEAN,
+    TCHECK_EXPECT_NUMERIC,
+    TCHECK_EXPECT_ARRAY,
+    TCHECK_CAST_ERROR,
+    TCHECK_INITIALIZER_NOT_UNIFORM,
+    TCHECK_EXPECT_VALID_INDEX
+} typechecker_error_t;
 
+static const char* typechecker_error_messages[] = {
+    [TCHECK_INVALID_ASSIGNMENT] = "Invalid assignment: type mismatch.",
+    [TCHECK_VARIABLE_INIT_ERROR] = "Variable initialization error.",
+    [TCHECK_INCOMPATIBLE_TYPES] = "Incompatible types.",
+    [TCHECK_EXPECT_BOOLEAN] = "Expected a boolean type.",
+    [TCHECK_EXPECT_NUMERIC] = "Expected a numeric type.",
+    [TCHECK_EXPECT_ARRAY] = "Expected an array type.",
+    [TCHECK_CAST_ERROR] = "Invalid cast.",
+    [TCHECK_INITIALIZER_NOT_UNIFORM] = "Initializer list elements are not of the same type.",
+    [TCHECK_EXPECT_VALID_INDEX] = "Expected a valid index for array access." 
+};
 
 typechecker_t create_typechecker() {
 
@@ -19,25 +37,38 @@ typechecker_t create_typechecker() {
 
     return (typechecker_t) {
         .symtbl = symtbl,
-        .status = TYPECHECKER_OK
+        .current = NULL,
+        .had_error = false
     };
 }
 
-static const type_t* typecheck_node(const ast_node_t* node, typechecker_t* tcheck) {
+static inline void typechecker_error(typechecker_t *tcheck, typechecker_error_t err) {
+    if(!tcheck->had_error) {
+        tcheck->had_error = true;
+    }
+
+    fprintf(stderr, "typechecker: %s\n", typechecker_error_messages[err]);
+}
+
+#define SET_RESULT_TYPE(tcheck, result) ((tcheck)->current = result)
+#define GET_TYPE_OF(expr, tcheck) (typecheck_node((expr), (tcheck)), (tcheck)->current)
+
+static void typecheck_node(const ast_node_t* node, typechecker_t* tcheck) {
 
     switch(node->kind) {
         case VARIABLE_DECL_NODE: {
             const variable_decl_t* const decl = (variable_decl_t*)node;
             
             const type_t* t = decl->is_type_inferred
-                ? typecheck_node(decl->rvalue, tcheck)
+                ? GET_TYPE_OF(decl->rvalue, tcheck)
                 : decl->type;
                 
             symbol_table_put(tcheck->symtbl, decl->name.lexeme, t);
 
             if(decl->rvalue != NULL && !decl->is_type_inferred) {
-                if(!are_types_equal(typecheck_node(decl->rvalue, tcheck), t)) {
-                    TYPECHECK_ERROR(tcheck, "Variable decl type mismatch!.\n");
+                if(!are_types_equal(GET_TYPE_OF(decl->rvalue, tcheck), t)) {
+                    typechecker_error(tcheck, TCHECK_VARIABLE_INIT_ERROR);
+                    return;
                 }
             }
 
@@ -46,44 +77,49 @@ static const type_t* typecheck_node(const ast_node_t* node, typechecker_t* tchec
         case IF_STATEMENT_NODE: {
             const if_statement_t* const stmt = (if_statement_t*)node;
 
-            if(!are_types_equal(typecheck_node(stmt->condition, tcheck), bool_type)) {
-                TYPECHECK_ERROR(tcheck, "If statement condition isn't boolean!.\n");
+            if(!are_types_equal(GET_TYPE_OF(stmt->condition, tcheck), bool_type)) {
+                typechecker_error(tcheck, TCHECK_EXPECT_BOOLEAN);
+                return;
             }
 
-            typecheck_node(stmt->then, tcheck);
+            GET_TYPE_OF(stmt->then, tcheck);
 
             if(stmt->otherwise != NULL) {
-                typecheck_node(stmt->otherwise, tcheck);
+                GET_TYPE_OF(stmt->otherwise, tcheck);
             }
 
             break;
         }
         case EXPR_STATEMENT_NODE: {
             const expr_statement_t* const stmt = (expr_statement_t*)node;
-            return typecheck_node(stmt->expr, tcheck);
+            SET_RESULT_TYPE(tcheck, GET_TYPE_OF(stmt->expr, tcheck));
+            break;
         }
         case ASSIGN_EXPR_NODE: {
 
             const assign_expr_t* const expr = (assign_expr_t*)node;
 
-            const type_t* left = typecheck_node(expr->lvalue, tcheck);
-            const type_t* right = typecheck_node(expr->rvalue, tcheck);
+            const type_t* left = GET_TYPE_OF(expr->lvalue, tcheck);
+            const type_t* right = GET_TYPE_OF(expr->rvalue, tcheck);
 
             if(!are_types_equal(right, left)) {
-                TYPECHECK_ERROR(tcheck, "Assign type mismatch!\n");
+                typechecker_error(tcheck, TCHECK_INVALID_ASSIGNMENT);
+                return;
             }
 
-            return left;
+            SET_RESULT_TYPE(tcheck, left);
+            break;
         }
         case BINARY_EXPR_NODE: {
 
             const binary_expr_t* const expr = (binary_expr_t*)node;
 
-            const type_t* left = typecheck_node(expr->left, tcheck);
-            const type_t* right = typecheck_node(expr->right, tcheck);
+            const type_t* left = GET_TYPE_OF(expr->left, tcheck);
+            const type_t* right = GET_TYPE_OF(expr->right, tcheck);
 
             if(!IS_NUMERIC_TYPE(left) || !IS_NUMERIC_TYPE(right)) {
-                TYPECHECK_ERROR(tcheck, "Expect numbers.\n");
+                typechecker_error(tcheck, TCHECK_EXPECT_NUMERIC);
+                return;
             }
 
             switch(expr->op.type) {
@@ -93,65 +129,78 @@ static const type_t* typecheck_node(const ast_node_t* node, typechecker_t* tchec
                 case SLASH: {
                     const type_t* result = cast_to_bigger(left, right);
                     if(result == NULL) {
-                        TYPECHECK_ERROR(tcheck, "Can't cast form/to arrays.\n");
+                        typechecker_error(tcheck, TCHECK_CAST_ERROR);
+                        return;
                     }
 
-                    return result;
+                    SET_RESULT_TYPE(tcheck, result);
+                    break;
                 }
                 case LESS:
                 case GREATER:
                 case GREATER_EQ:
                 case LESS_EQ:
-                    return bool_type;
+                    SET_RESULT_TYPE(tcheck, bool_type);
+                    break;
                 default:
                     break;
             }
-
+            
             break;
         }
         case UNARY_EXPR_NODE: {
 
             const unary_expr_t* const expr = (unary_expr_t*)node;
 
-            const type_t* right = typecheck_node(expr->right, tcheck);
+            const type_t* right = GET_TYPE_OF(expr->right, tcheck);
 
             if(!IS_NUMERIC_TYPE(right)) {
-                TYPECHECK_ERROR(tcheck, "Expect a number.\n");
+                typechecker_error(tcheck, TCHECK_EXPECT_NUMERIC);
+                return;
             }
 
-            return right;
+            SET_RESULT_TYPE(tcheck, right);
+            break;
         }
         case CASTING_EXPR_NODE: {
 
             const casting_expr_t* const expr = (casting_expr_t*)node;
 
-            const type_t* const expr_type = typecheck_node(expr->expr, tcheck);
+            const type_t* const expr_type = GET_TYPE_OF(expr->expr, tcheck);
             if (!can_cast_to(expr_type, expr->target_type)) {
-                TYPECHECK_ERROR(tcheck, "Cast error.\n");
+                typechecker_error(tcheck, TCHECK_CAST_ERROR);
+                return;
             }
 
-            return expr->target_type;
+            SET_RESULT_TYPE(tcheck, expr->target_type);
+            break;
         }
         case SUBSCRIPT_EXPR_NODE: {
 
             const subscript_expr_t* const expr = (subscript_expr_t*)node;
 
-            const type_t* type = typecheck_node(expr->lvalue, tcheck);
+            const type_t* type = GET_TYPE_OF(expr->lvalue, tcheck);
 
             if(type->kind != TYPE_ARRAY) {
-                TYPECHECK_ERROR(tcheck, "Subscript expression expect an array type.\n");
+                typechecker_error(tcheck, TCHECK_EXPECT_ARRAY);
+                return;
             }
 
-            if(!are_types_equal(typecheck_node(expr->index, tcheck), int_type)) {
-                TYPECHECK_ERROR(tcheck, "Subscript expression expect integer as index.\n");
+            if(!are_types_equal(GET_TYPE_OF(expr->index, tcheck), int_type)) {
+                typechecker_error(tcheck, TCHECK_EXPECT_VALID_INDEX);
+                return;
             }
 
-            return type->underlying;
+            SET_RESULT_TYPE(tcheck, type->underlying);
+            break;
         }
         case VARIABLE_EXPR_NODE: {
 
             const variable_expr_t* const var = (variable_expr_t*)node;
-            return symbol_table_search(tcheck->symtbl, var->name.lexeme);
+            const type_t* var_type = symbol_table_search(tcheck->symtbl, var->name.lexeme);
+
+            SET_RESULT_TYPE(tcheck, var_type);
+            break;
         }
         case INITIALIZER_NODE: {
 
@@ -160,36 +209,35 @@ static const type_t* typecheck_node(const ast_node_t* node, typechecker_t* tchec
             const type_t* prev = NULL;
             int count = 0;
             for(const ast_node_t* it = initializer->init; it != NULL; it = it->next, count++) {
-                const type_t* type = typecheck_node(it, tcheck);
+                const type_t* type = GET_TYPE_OF(it, tcheck);
 
                 if(prev != NULL && !are_types_equal(prev, type)) {
-                    TYPECHECK_ERROR(tcheck, "Initializer type is not uniform.\n");
+                    typechecker_error(tcheck, TCHECK_INITIALIZER_NOT_UNIFORM);
+                    return;
                 }
 
                 prev = type;
             }
 
-            return create_array_type(prev, count);
+            prev = create_array_type(prev, count);
+            
+            SET_RESULT_TYPE(tcheck, prev);
+            break;
         }
         case LITERAL_NODE: {
 
             const literal_expr_t* const lit = (literal_expr_t*)node;
-            return lit->type;
+            SET_RESULT_TYPE(tcheck, lit->type);
+            break;
         }
     }
-
-    return NULL;
 }
 
 bool typecheck_ast(const ast_node_t* ast, typechecker_t* tcheck) {
 
-    if(setjmp(tcheck->error) == 0) {
-        for(const ast_node_t* it = ast; it != NULL; it = it->next){
-            typecheck_node(it, tcheck);
-        }
-    } else {
-        tcheck->status = TYPECHECKER_ERROR;
+    for (const ast_node_t *it = ast; it != NULL; it = it->next){
+        typecheck_node(it, tcheck);
     }
 
-    return tcheck->status != TYPECHECKER_ERROR;
+    return !tcheck->had_error;
 }

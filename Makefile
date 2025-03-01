@@ -1,5 +1,5 @@
 CC := gcc
-CFLAGS := -g -Wall -Wextra -std=c11 -Wno-format -Wno-implicit-fallthrough
+CFLAGS := -g -Wall -Wextra -std=c11 -Wno-format -Wno-implicit-fallthrough -Wno-unused-value
 
 SOURCES := $(wildcard src/*.c)
 OBJECTS := $(patsubst src/%.c, obj/%.o, $(SOURCES))
